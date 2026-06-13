@@ -17,7 +17,7 @@ class _LokasiTokoState extends State<LokasiToko> {
   bool _isLoading = true;
 
 // Titik Koordinat
-  static const LatLng _lokasiToko = LatLng(-8.1845, 113.6630);
+  static const LatLng _lokasiToko = LatLng(-8.162921888586801, 113.71181489497145); 
   static const String _namaToko = 'HomeHobby';
   static const String _alamatToko = 'Jember, Jawa Timur';
 

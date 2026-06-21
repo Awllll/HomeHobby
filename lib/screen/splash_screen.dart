@@ -5,6 +5,17 @@ import 'login_screen.dart';
 import 'admin/dashboard_admin.dart';
 import 'pelanggan/beranda_pelanggan.dart';
 
+class AppColors {
+  static const deepRed = Color(0xFF832D25);
+  static const pink = Color(0xFFEA6993);
+  static const lightPink = Color(0xFFF8CAE4);
+  static const sage = Color(0xFFCFDD9D);
+  static const forest = Color(0xFF447A5F);
+
+  static const whiteSoft = Color(0xB3FFFFFF);
+  static const shadow = Color(0x33000000);
+}
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -22,6 +33,8 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _cekLogin() async {
     await Future.delayed(const Duration(seconds: 2));
 
+    if (!mounted) return;
+
     User? user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
@@ -33,6 +46,8 @@ class _SplashScreenState extends State<SplashScreen> {
           .collection('users')
           .doc(user.uid)
           .get();
+
+      if (!mounted) return;
 
       String role = doc['role'] ?? 'pelanggan';
 
@@ -54,48 +69,69 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF6C63FF),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Logo
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppColors.deepRed, AppColors.pink],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              //Logo
+              Container(
+                width: 130,
+                height: 130,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.shadow,
+                      blurRadius: 20,
+                      offset: Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: ClipOval(
+                  child: Image.asset(
+                    'assets/images/logo_homehobby.jpg',
+                    fit: BoxFit.cover,
+                    alignment: const Alignment(0, 1),
+                  ),
+                ),
               ),
-              child: const Icon(
-                Icons.shopping_bag_rounded,
-                size: 60,
-                color: Color(0xFF6C63FF),
+              const SizedBox(height: 24),
+              const Text(
+                'HomeHobby',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'HomeHobby',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.5,
+              const SizedBox(height: 8),
+              const Text(
+                'Platform Merchandise Custom Ter-Favv',
+                style: TextStyle(
+                  color: AppColors.whiteSoft,
+                  fontSize: 14,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Merchandise Custom Terbaik',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 14,
+              const SizedBox(height: 44),
+              const SizedBox(
+                width: 32,
+                height: 32,
+                child: CircularProgressIndicator(
+                  color: AppColors.sage,
+                  strokeWidth: 3,
+                ),
               ),
-            ),
-            const SizedBox(height: 40),
-            const CircularProgressIndicator(
-              color: Colors.white,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

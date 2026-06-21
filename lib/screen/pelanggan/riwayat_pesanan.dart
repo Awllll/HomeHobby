@@ -5,6 +5,18 @@ import 'detail_pesanan_pelanggan.dart';
 import '../../model/pesanan_model.dart';
 import '../../service/firestore_service.dart';
 
+class AppColors {
+  static const deepRed = Color(0xFF832D25);
+  static const pink = Color(0xFFEA6993);
+  static const lightPink = Color(0xFFF8CAE4);
+  static const sage = Color(0xFFCFDD9D);
+  static const forest = Color(0xFF447A5F);
+  static const bg = Color(0xFFFDF6F9);
+
+  static const pinkShadow = Color(0x12EA6993);
+  static const lightPinkFaded = Color(0x66F8CAE4);
+}
+
 class RiwayatPesanan extends StatefulWidget {
   const RiwayatPesanan({super.key});
 
@@ -14,39 +26,48 @@ class RiwayatPesanan extends StatefulWidget {
 
 class _RiwayatPesananState extends State<RiwayatPesanan> {
   final FirestoreService _firestoreService = FirestoreService();
-  final String _pelangganId =
-      FirebaseAuth.instance.currentUser?.uid ?? '';
+  final String _pelangganId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
-  String _formatHarga(int harga) {
-    return 'Rp ${harga.toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]}.',
-    )}';
-  }
+  String _formatHarga(int harga) =>
+      'Rp ${harga.toString().replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+        (m) => '${m[1]}.',
+      )}';
 
-  String _formatTanggal(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
-  }
+  String _formatTanggal(DateTime date) =>
+      '${date.day.toString().padLeft(2, '0')}/'
+      '${date.month.toString().padLeft(2, '0')}/${date.year}';
 
   Color _warnaStatus(String status) {
     switch (status) {
-      case 'pending': return Colors.orange;
-      case 'diproses': return Colors.blue;
-      case 'dikirim': return Colors.purple;
-      case 'selesai': return Colors.green;
-      case 'dibatalkan': return Colors.red;
+      case 'pending': return const Color(0xFFE8A020);
+      case 'diproses': return AppColors.pink;
+      case 'dikirim': return AppColors.deepRed;
+      case 'selesai': return AppColors.forest;
+      case 'dibatalkan': return const Color(0xFFB71C1C);
       default: return Colors.grey;
+    }
+  }
+
+  Color _accentStatus(String status) {
+    switch (status) {
+      case 'pending': return const Color(0xFFFFF3D6);
+      case 'diproses': return AppColors.lightPink;
+      case 'dikirim': return AppColors.lightPink;
+      case 'selesai': return AppColors.sage;
+      case 'dibatalkan': return const Color(0xFFFFEBEE);
+      default: return const Color(0xFFF5F5F5);
     }
   }
 
   IconData _ikonStatus(String status) {
     switch (status) {
-      case 'pending': return Icons.access_time;
+      case 'pending': return Icons.access_time_rounded;
       case 'diproses': return Icons.settings_outlined;
       case 'dikirim': return Icons.local_shipping_outlined;
-      case 'selesai': return Icons.check_circle_outline;
+      case 'selesai': return Icons.check_circle_outline_rounded;
       case 'dibatalkan': return Icons.cancel_outlined;
-      default: return Icons.help_outline;
+      default: return Icons.help_outline_rounded;
     }
   }
 
@@ -57,79 +78,70 @@ class _RiwayatPesananState extends State<RiwayatPesanan> {
     BoxFit fit = BoxFit.cover,
   }) {
     try {
-      if (base64String.isEmpty) {
-        return Container(
-          width: width,
-          height: height,
-          color: Colors.grey.shade200,
-          child: const Icon(Icons.image_outlined, color: Colors.grey),
-        );
-      }
+      if (base64String.isEmpty) return _imgPlaceholder(width, height);
       return Image.memory(
         base64Decode(base64String),
-        width: width,
-        height: height,
-        fit: fit,
-        errorBuilder: (_, __, ___) => Container(
-          width: width,
-          height: height,
-          color: Colors.grey.shade200,
-          child: const Icon(Icons.image_outlined, color: Colors.grey),
-        ),
+        width: width, height: height, fit: fit,
+        errorBuilder: (_, __, ___) => _imgPlaceholder(width, height),
       );
-    } catch (e) {
-      return Container(
-        width: width,
-        height: height,
-        color: Colors.grey.shade200,
-        child: const Icon(Icons.image_outlined, color: Colors.grey),
-      );
+    } catch (_) {
+      return _imgPlaceholder(width, height);
     }
   }
+
+  Widget _imgPlaceholder(double? w, double? h) => Container(
+        width: w, height: h,
+        color: AppColors.lightPink,
+        child: const Icon(Icons.image_outlined, color: AppColors.pink),
+      );
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: AppColors.bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF6C63FF),
+        backgroundColor: AppColors.deepRed,
+        elevation: 0,
         automaticallyImplyLeading: false,
         title: const Text(
           'Riwayat Pesanan',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
       ),
       body: StreamBuilder<List<PesananModel>>(
         stream: _firestoreService.streamPesananPelanggan(_pelangganId),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(color: AppColors.deepRed),
+            );
           }
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.receipt_long_outlined,
-                      size: 64, color: Colors.grey.shade400),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Belum ada pesanan',
+                  Container(
+                    width: 80, height: 80,
+                    decoration: const BoxDecoration(
+                      color: AppColors.lightPink,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.receipt_long_outlined, size: 38, color: AppColors.pink),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'yah masih kosong :(',
                     style: TextStyle(
-                      color: Colors.grey.shade400,
-                      fontSize: 16,
+                      color: AppColors.deepRed,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   Text(
                     'Yuk mulai pesan merchandise!',
-                    style: TextStyle(
-                      color: Colors.grey.shade400,
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
                   ),
                 ],
               ),
@@ -139,9 +151,7 @@ class _RiwayatPesananState extends State<RiwayatPesanan> {
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: pesananList.length,
-            itemBuilder: (context, index) {
-              return _buildPesananCard(pesananList[index]);
-            },
+            itemBuilder: (context, index) => _buildPesananCard(pesananList[index]),
           );
         },
       ),
@@ -152,129 +162,130 @@ class _RiwayatPesananState extends State<RiwayatPesanan> {
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (_) => DetailPesananPelanggan(pesanan: pesanan),
-        ),
+        MaterialPageRoute(builder: (_) => DetailPesananPelanggan(pesanan: pesanan)),
       ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: _warnaStatus(pesanan.status).withOpacity(0.05),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+          border: Border.fromBorderSide(BorderSide(color: AppColors.lightPink, width: 1)),
+          boxShadow: [BoxShadow(color: AppColors.pinkShadow, blurRadius: 10, offset: Offset(0, 4))],
+        ),
+        child: Column(
+          children: [
+            //Header
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: const BoxDecoration(
+                color: AppColors.lightPinkFaded,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
               ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '#${pesanan.id.substring(0, 8).toUpperCase()}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
-                Row(
-                  children: [
-                    Icon(
-                      _ikonStatus(pesanan.status),
-                      size: 14,
-                      color: _warnaStatus(pesanan.status),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      pesanan.status[0].toUpperCase() +
-                          pesanan.status.substring(1),
-                      style: TextStyle(
-                        color: _warnaStatus(pesanan.status),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: _buildGambar(
-                    base64String: pesanan.produkGambar,
-                    width: 65,
-                    height: 65,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
                     children: [
+                      const Icon(Icons.receipt_rounded, size: 14, color: AppColors.deepRed),
+                      const SizedBox(width: 6),
                       Text(
-                        pesanan.produkNama,
+                        '#${pesanan.id.substring(0, 8).toUpperCase()}',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${pesanan.jumlah} pcs × ${_formatHarga(pesanan.harga)}',
-                        style: TextStyle(
-                          color: Colors.grey.shade500,
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _formatHarga(pesanan.totalHarga),
-                        style: const TextStyle(
-                          color: Color(0xFF6C63FF),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                          fontSize: 13,
+                          color: AppColors.deepRed,
                         ),
                       ),
                     ],
                   ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(12),
-                bottomRight: Radius.circular(12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _accentStatus(pesanan.status),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(_ikonStatus(pesanan.status), size: 13, color: _warnaStatus(pesanan.status)),
+                        const SizedBox(width: 5),
+                        Text(
+                          pesanan.status[0].toUpperCase() + pesanan.status.substring(1),
+                          style: TextStyle(
+                            color: _warnaStatus(pesanan.status),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            child: Row(
-              children: [
-                Icon(Icons.calendar_today_outlined,
-                    size: 12, color: Colors.grey.shade400),
-                const SizedBox(width: 4),
-                Text(
-                  _formatTanggal(pesanan.createdAt),
-                  style: TextStyle(
-                    color: Colors.grey.shade400,
-                    fontSize: 12,
+
+            //Body
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: _buildGambar(base64String: pesanan.produkGambar, width: 64, height: 64),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          pesanan.produkNama,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          '${pesanan.jumlah} pcs × ${_formatHarga(pesanan.harga)}',
+                          style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _formatHarga(pesanan.totalHarga),
+                          style: const TextStyle(
+                            color: AppColors.forest,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right_rounded, color: AppColors.pink, size: 22),
+                ],
+              ),
             ),
-          ),
-        ],
+
+            //Footer
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: const BoxDecoration(
+                color: Color(0xFFFAFAFA),
+                borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+                border: Border(top: BorderSide(color: AppColors.lightPink, width: 1)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.calendar_today_rounded, size: 12, color: Colors.grey.shade400),
+                  const SizedBox(width: 4),
+                  Text(
+                    _formatTanggal(pesanan.createdAt),
+                    style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

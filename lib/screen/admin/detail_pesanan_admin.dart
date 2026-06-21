@@ -3,6 +3,19 @@ import 'dart:convert';
 import '../../model/pesanan_model.dart';
 import '../../service/firestore_service.dart';
 
+class AppColors {
+  static const deepRed = Color(0xFF832D25);
+  static const pink = Color(0xFFEA6993);
+  static const lightPink = Color(0xFFF8CAE4);
+  static const sage = Color(0xFFCFDD9D);
+  static const forest = Color(0xFF447A5F);
+  static const bg = Color(0xFFFDF6F9);
+
+  static const pinkBorder = Color(0x1AEA6993);
+  static const pinkShadow = Color(0x12EA6993);
+  static const greyDivider = Color(0xFFE0E0E0);
+}
+
 class DetailPesananAdmin extends StatefulWidget {
   final PesananModel pesanan;
   const DetailPesananAdmin({super.key, required this.pesanan});
@@ -23,26 +36,37 @@ class _DetailPesananAdminState extends State<DetailPesananAdmin> {
 
   Color _warnaStatus(String status) {
     switch (status) {
-      case 'pending': return Colors.orange;
-      case 'diproses': return Colors.blue;
-      case 'dikirim': return Colors.purple;
-      case 'selesai': return Colors.green;
-      case 'dibatalkan': return Colors.red;
+      case 'pending': return const Color(0xFFE8A020);
+      case 'diproses': return AppColors.pink;
+      case 'dikirim': return AppColors.deepRed;
+      case 'selesai': return AppColors.forest;
+      case 'dibatalkan': return const Color(0xFFB71C1C);
       default: return Colors.grey;
     }
   }
 
-  String _formatHarga(int harga) {
-    return 'Rp ${harga.toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]}.',
-    )}';
+  Color _accentStatus(String status) {
+    switch (status) {
+      case 'pending': return const Color(0xFFFFF3D6);
+      case 'diproses': return AppColors.lightPink;
+      case 'dikirim': return AppColors.lightPink;
+      case 'selesai': return AppColors.sage;
+      case 'dibatalkan': return const Color(0xFFFFEBEE);
+      default: return const Color(0xFFF5F5F5);
+    }
   }
 
-  String _formatTanggal(DateTime date) {
-    return '${date.day}/${date.month}/${date.year} '
-        '${date.hour}:${date.minute.toString().padLeft(2, '0')}';
-  }
+  String _formatHarga(int harga) =>
+      'Rp ${harga.toString().replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+        (m) => '${m[1]}.',
+      )}';
+
+  String _formatTanggal(DateTime date) =>
+      '${date.day.toString().padLeft(2, '0')}/'
+      '${date.month.toString().padLeft(2, '0')}/${date.year}  '
+      '${date.hour.toString().padLeft(2, '0')}:'
+      '${date.minute.toString().padLeft(2, '0')}';
 
   Widget _buildGambar({
     required String base64String,
@@ -51,154 +75,136 @@ class _DetailPesananAdminState extends State<DetailPesananAdmin> {
     BoxFit fit = BoxFit.cover,
   }) {
     try {
-      if (base64String.isEmpty) {
-        return Container(
-          width: width,
-          height: height,
-          color: Colors.grey.shade200,
-          child: const Icon(Icons.image_outlined, color: Colors.grey),
-        );
-      }
+      if (base64String.isEmpty) return _imgPlaceholder(width, height);
       return Image.memory(
         base64Decode(base64String),
-        width: width,
-        height: height,
-        fit: fit,
-        errorBuilder: (_, __, ___) => Container(
-          width: width,
-          height: height,
-          color: Colors.grey.shade200,
-          child: const Icon(Icons.image_outlined, color: Colors.grey),
-        ),
+        width: width, height: height, fit: fit,
+        errorBuilder: (_, __, ___) => _imgPlaceholder(width, height),
       );
-    } catch (e) {
-      return Container(
-        width: width,
-        height: height,
-        color: Colors.grey.shade200,
-        child: const Icon(Icons.image_outlined, color: Colors.grey),
-      );
+    } catch (_) {
+      return _imgPlaceholder(width, height);
     }
   }
+
+  Widget _imgPlaceholder(double? w, double? h) => Container(
+        width: w, height: h,
+        color: AppColors.lightPink,
+        child: const Icon(Icons.image_outlined, color: AppColors.pink),
+      );
 
   Future<void> _updateStatus(String statusBaru) async {
     try {
       await _firestoreService.updateStatusPesanan(
-        widget.pesanan.id,
-        statusBaru,
-        widget.pesanan.produkNama,
-        widget.pesanan.pelangganId,
+        widget.pesanan.id, statusBaru,
+        widget.pesanan.produkNama, widget.pesanan.pelangganId,
         produkId: widget.pesanan.produkId,
         jumlah: widget.pesanan.jumlah,
       );
-
       setState(() => _statusSaatIni = statusBaru);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Status diubah ke "$statusBaru"'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Status diubah ke "$statusBaru"'),
+        backgroundColor: AppColors.forest,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ));
     } catch (e) {
-      print('ERROR UPDATE STATUS: $e');
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Error: $e'),
+        backgroundColor: const Color(0xFFB71C1C),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ));
     }
   }
 
   Future<void> _showUbahStatus() async {
-    if (_statusSaatIni == 'dibatalkan') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pesanan yang dibatalkan tidak bisa diubah!'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    if (_statusSaatIni == 'selesai') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pesanan yang sudah selesai tidak bisa diubah!'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+    if (_statusSaatIni == 'dibatalkan' || _statusSaatIni == 'selesai') {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(_statusSaatIni == 'dibatalkan'
+            ? 'Pesanan yang dibatalkan tidak bisa diubah!'
+            : 'Pesanan yang sudah selesai tidak bisa diubah!'),
+        backgroundColor: AppColors.pink,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ));
       return;
     }
 
     await showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(20),
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             const Text(
               'Ubah Status Pesanan',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
+                color: AppColors.deepRed,
               ),
             ),
             const SizedBox(height: 16),
             ...PesananModel.statusList.map((status) {
               final isSelected = status == _statusSaatIni;
-
-              bool shouldShow = true;
+              bool show = true;
               if (_statusSaatIni == 'pending' &&
-                  (status == 'selesai' || status == 'dikirim')) {
-                shouldShow = false;
-              }
-              if (_statusSaatIni == 'diproses' &&
-                  status == 'pending') {
-                shouldShow = false;
-              }
+                  (status == 'selesai' || status == 'dikirim')) show = false;
+              if (_statusSaatIni == 'diproses' && status == 'pending') show = false;
               if (_statusSaatIni == 'dikirim' &&
-                  (status == 'pending' || status == 'diproses')) {
-                shouldShow = false;
-              }
+                  (status == 'pending' || status == 'diproses')) show = false;
+              if (!show) return const SizedBox.shrink();
 
-              if (!shouldShow) return const SizedBox.shrink();
-
-              return ListTile(
-                onTap: () {
-                  Navigator.pop(context);
-                  if (status != _statusSaatIni) _updateStatus(status);
-                },
-                leading: Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: _warnaStatus(status),
-                    shape: BoxShape.circle,
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? _accentStatus(status) : Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isSelected ? _warnaStatus(status) : Colors.grey.shade200,
+                    width: isSelected ? 1.5 : 1,
                   ),
                 ),
-                title: Text(
-                  status[0].toUpperCase() + status.substring(1),
-                  style: TextStyle(
-                    fontWeight: isSelected
-                        ? FontWeight.bold
-                        : FontWeight.normal,
-                    color: isSelected
-                        ? const Color(0xFF6C63FF)
-                        : Colors.black,
+                child: ListTile(
+                  onTap: () {
+                    Navigator.pop(context);
+                    if (status != _statusSaatIni) _updateStatus(status);
+                  },
+                  leading: Container(
+                    width: 10, height: 10,
+                    decoration: BoxDecoration(
+                      color: _warnaStatus(status),
+                      shape: BoxShape.circle,
+                    ),
                   ),
+                  title: Text(
+                    status[0].toUpperCase() + status.substring(1),
+                    style: TextStyle(
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      color: isSelected ? _warnaStatus(status) : Colors.black87,
+                    ),
+                  ),
+                  trailing: isSelected
+                      ? Icon(Icons.check_circle_rounded, color: _warnaStatus(status))
+                      : null,
                 ),
-                trailing: isSelected
-                    ? const Icon(Icons.check,
-                        color: Color(0xFF6C63FF))
-                    : null,
               );
             }),
           ],
@@ -211,15 +217,13 @@ class _DetailPesananAdminState extends State<DetailPesananAdmin> {
   Widget build(BuildContext context) {
     final pesanan = widget.pesanan;
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: AppColors.bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF6C63FF),
+        backgroundColor: AppColors.deepRed,
+        elevation: 0,
         title: const Text(
           'Detail Pesanan',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -227,88 +231,82 @@ class _DetailPesananAdminState extends State<DetailPesananAdmin> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            //Status
+            _buildSection(
+              title: 'Status Pesanan',
+              titleIcon: Icons.info_outline_rounded,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Status Pesanan',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: _accentStatus(_statusSaatIni),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: _warnaStatus(_statusSaatIni)
-                              .withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 8, height: 8,
+                          decoration: BoxDecoration(
+                            color: _warnaStatus(_statusSaatIni),
+                            shape: BoxShape.circle,
+                          ),
                         ),
-                        child: Text(
-                          _statusSaatIni[0].toUpperCase() +
-                              _statusSaatIni.substring(1),
+                        const SizedBox(width: 6),
+                        Text(
+                          _statusSaatIni[0].toUpperCase() + _statusSaatIni.substring(1),
                           style: TextStyle(
                             color: _warnaStatus(_statusSaatIni),
                             fontWeight: FontWeight.bold,
+                            fontSize: 13,
                           ),
                         ),
-                      ),
-                      ElevatedButton.icon(
-                        onPressed: _statusSaatIni == 'dibatalkan' ||
-                                _statusSaatIni == 'selesai'
-                            ? null  
-                            : _showUbahStatus,
-                        icon: const Icon(Icons.edit, size: 16),
-                        label: Text(
-                          _statusSaatIni == 'dibatalkan'
-                              ? 'Dibatalkan'
-                              : _statusSaatIni == 'selesai'
-                                  ? 'Selesai'
-                                  : 'Ubah Status',
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _statusSaatIni == 'dibatalkan'
-                              ? Colors.red
-                              : _statusSaatIni == 'selesai'
-                                  ? Colors.green
-                                  : const Color(0xFF6C63FF),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: _statusSaatIni == 'dibatalkan' || _statusSaatIni == 'selesai'
+                        ? null
+                        : _showUbahStatus,
+                    icon: const Icon(Icons.edit_rounded, size: 15),
+                    label: Text(
+                      _statusSaatIni == 'dibatalkan'
+                          ? 'Dibatalkan'
+                          : _statusSaatIni == 'selesai'
+                              ? 'Selesai'
+                              : 'Ubah Status',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _statusSaatIni == 'dibatalkan'
+                          ? const Color(0xFFB71C1C)
+                          : _statusSaatIni == 'selesai'
+                              ? AppColors.forest
+                              : AppColors.deepRed,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 12),
+
+            //Info Produk
             _buildSection(
               title: 'Info Produk',
+              titleIcon: Icons.inventory_2_rounded,
               child: Row(
                 children: [
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
                     child: _buildGambar(
-                      base64String: pesanan.produkGambar,
-                      width: 70,
-                      height: 70,
-                    ),
+                        base64String: pesanan.produkGambar, width: 76, height: 76),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -316,25 +314,26 @@ class _DetailPesananAdminState extends State<DetailPesananAdmin> {
                         Text(
                           pesanan.produkNama,
                           style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                          ),
+                              fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF1A1A1A)),
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          pesanan.kategori,
-                          style: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 12,
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.lightPink,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            pesanan.kategori,
+                            style: const TextStyle(
+                                color: AppColors.deepRed, fontSize: 11, fontWeight: FontWeight.w600),
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                         Text(
                           _formatHarga(pesanan.harga),
                           style: const TextStyle(
-                            color: Color(0xFF6C63FF),
-                            fontWeight: FontWeight.w600,
-                          ),
+                              color: AppColors.forest, fontWeight: FontWeight.bold, fontSize: 14),
                         ),
                       ],
                     ),
@@ -343,33 +342,34 @@ class _DetailPesananAdminState extends State<DetailPesananAdmin> {
               ),
             ),
             const SizedBox(height: 12),
+
+            //Info Pesanan
             _buildSection(
               title: 'Info Pesanan',
+              titleIcon: Icons.receipt_long_rounded,
               child: Column(
                 children: [
-                  _buildInfoRow('ID Pesanan',
-                      '#${pesanan.id.substring(0, 8).toUpperCase()}'),
+                  _buildInfoRow('ID Pesanan', '#${pesanan.id.substring(0, 8).toUpperCase()}'),
                   _buildInfoRow('Jumlah', '${pesanan.jumlah} pcs'),
-                  _buildInfoRow(
-                      'Harga Satuan', _formatHarga(pesanan.harga)),
-                  _buildInfoRow(
-                      'Total', _formatHarga(pesanan.totalHarga),
-                      isBold: true),
-                  _buildInfoRow(
-                      'Tanggal', _formatTanggal(pesanan.createdAt)),
+                  _buildInfoRow('Harga Satuan', _formatHarga(pesanan.harga)),
+                  _buildInfoRowBold('Total', _formatHarga(pesanan.totalHarga)),
+                  _buildInfoRow('Tanggal', _formatTanggal(pesanan.createdAt)),
                   if (pesanan.catatan.isNotEmpty)
                     _buildInfoRow('Catatan', pesanan.catatan),
                 ],
               ),
             ),
             const SizedBox(height: 12),
+
+            //Info Pelanggan
             _buildSection(
               title: 'Info Pelanggan',
+              titleIcon: Icons.person_rounded,
               child: Column(
                 children: [
                   _buildInfoRow('Nama', pesanan.pelangganNama),
                   _buildInfoRow('Email', pesanan.pelangganEmail),
-                   _buildInfoRow('Alamat', pesanan.pelangganAlamat), 
+                  _buildInfoRow('Alamat', pesanan.pelangganAlamat),
                 ],
               ),
             ),
@@ -382,53 +382,74 @@ class _DetailPesananAdminState extends State<DetailPesananAdmin> {
 
   Widget _buildSection({
     required String title,
+    required IconData titleIcon,
     required Widget child,
   }) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.all(Radius.circular(16)),
+        boxShadow: [BoxShadow(color: AppColors.pinkShadow, blurRadius: 10, offset: Offset(0, 4))],
+        border: Border.fromBorderSide(BorderSide(color: AppColors.lightPink, width: 1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
+          Row(
+            children: [
+              const Icon(Icons.circle, size: 8, color: AppColors.deepRed),
+              const SizedBox(width: 6),
+              Icon(titleIcon, size: 16, color: AppColors.deepRed),
+              const SizedBox(width: 6),
+              Text(
+                title,
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.deepRed),
+              ),
+            ],
           ),
-          const Divider(height: 16),
+          const SizedBox(height: 10),
+          const Divider(height: 1, color: AppColors.lightPink),
+          const SizedBox(height: 12),
           child,
         ],
       ),
     );
   }
 
-  Widget _buildInfoRow(String label, String value,
-      {bool isBold = false}) {
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+          const SizedBox(width: 12),
+          Flexible(
+            child: Text(value,
+                textAlign: TextAlign.right,
+                style: const TextStyle(fontSize: 13, color: Color(0xFF1A1A1A))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRowBold(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: const TextStyle(color: Colors.grey, fontSize: 13),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontWeight:
-                  isBold ? FontWeight.bold : FontWeight.normal,
-              fontSize: 13,
-              color:
-                  isBold ? const Color(0xFF6C63FF) : Colors.black,
-            ),
-          ),
+          Text(label,
+              style: TextStyle(
+                  color: Colors.grey.shade500, fontSize: 13, fontWeight: FontWeight.w600)),
+          Text(value,
+              style: const TextStyle(
+                  fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.forest)),
         ],
       ),
     );

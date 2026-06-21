@@ -36,7 +36,12 @@ class AuthService {
   }
 
   // Register email & password
-  Future<UserModel?> register(String nama, String email, String password) async {
+  Future<UserModel?> register(
+    String nama,
+    String email,
+    String password,
+    String noTelepon,
+  ) async {
     try {
       UserCredential result = await _auth.createUserWithEmailAndPassword(
         email: email,
@@ -48,6 +53,7 @@ class AuthService {
         nama: nama,
         email: email,
         role: 'pelanggan',
+        noTelepon: noTelepon,
       );
 
       await _firestore
@@ -57,6 +63,7 @@ class AuthService {
 
       return user;
     } catch (e) {
+      print('REGISTER ERROR: $e');
       return null;
     }
   }
@@ -65,7 +72,7 @@ class AuthService {
   Future<UserModel?> loginWithGoogle() async {
     try {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return null; // user cancel
+      if (googleUser == null) return null;
 
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;

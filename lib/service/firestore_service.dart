@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
@@ -8,9 +9,12 @@ import '../model/pesanan_model.dart';
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // ==================== HELPER ====================
-
   Future<String> gambarKeBase64(File file) async {
+    if (kIsWeb) {
+      final bytes = await file.readAsBytes();
+      return base64Encode(bytes);
+    }
+
     final compressed = await FlutterImageCompress.compressWithFile(
       file.absolute.path,
       quality: 60,
@@ -26,8 +30,7 @@ class FirestoreService {
     return base64Encode(compressed);
   }
 
-  // ==================== PRODUK ====================
-
+  //PRODUK
   Stream<List<ProdukModel>> streamProduk() {
     return _firestore
         .collection('produk')
@@ -50,6 +53,34 @@ class FirestoreService {
           list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
           return list;
         });
+  }
+
+  Stream<List<ProdukModel>> streamProdukPopuler() {
+    return _firestore.collection('produk').snapshots().asyncMap((produkSnap) async {
+      final produkList = produkSnap.docs
+          .map((doc) => ProdukModel.fromMap(doc.data(), doc.id))
+          .toList();
+
+      final pesananSnap = await _firestore.collection('pesanan').get();
+
+      final Map<String, int> totalTerjual = {};
+      for (final doc in pesananSnap.docs) {
+        final data = doc.data();
+        final produkId = data['produkId'] as String?;
+        final jumlah = (data['jumlah'] as num?)?.toInt() ?? 0;
+        if (produkId == null) continue;
+        totalTerjual[produkId] = (totalTerjual[produkId] ?? 0) + jumlah;
+      }
+
+      produkList.sort((a, b) {
+        final terjualA = totalTerjual[a.id] ?? 0;
+        final terjualB = totalTerjual[b.id] ?? 0;
+        if (terjualB != terjualA) return terjualB.compareTo(terjualA);
+        return b.createdAt.compareTo(a.createdAt);
+      });
+
+      return produkList;
+    });
   }
 
   Future<void> tambahProduk(ProdukModel produk) async {
@@ -78,8 +109,7 @@ class FirestoreService {
     });
   }
 
-  // ==================== PESANAN ====================
-
+  //PESANAN
   Stream<List<PesananModel>> streamSemuaPesanan() {
     return _firestore
         .collection('pesanan')
@@ -164,7 +194,7 @@ class FirestoreService {
       'status': status,
     });
 
-     await _firestore.collection('notifikasi').add({
+    await _firestore.collection('notifikasi').add({
       'userId': pelangganId,
       'judul': 'Status Pesanan',
       'pesan':

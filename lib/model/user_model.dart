@@ -3,12 +3,16 @@ class UserModel {
   final String nama;
   final String email;
   final String role;
+  final String noTelepon;
+  final String fotoProfil;
 
   UserModel({
     required this.uid,
     required this.nama,
     required this.email,
     required this.role,
+    this.noTelepon = '',
+    this.fotoProfil = '',
   });
 
   // Ambil data dari Firestore → jadi object UserModel
@@ -18,6 +22,8 @@ class UserModel {
       nama: map['nama'] ?? '',
       email: map['email'] ?? '',
       role: map['role'] ?? 'pelanggan',
+      noTelepon: map['noTelepon'] ?? '',
+      fotoProfil: map['fotoProfil'] ?? '',
     );
   }
 
@@ -27,6 +33,8 @@ class UserModel {
       'nama': nama,
       'email': email,
       'role': role,
+      'noTelepon': noTelepon,
+      'fotoProfil': fotoProfil,
     };
   }
 }

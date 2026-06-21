@@ -1,6 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+class AppColors {
+  static const deepRed = Color(0xFF832D25);
+  static const pink = Color(0xFFEA6993);
+  static const lightPink = Color(0xFFF8CAE4);
+  static const sage = Color(0xFFCFDD9D);
+  static const forest = Color(0xFF447A5F);
+  static const bg = Color(0xFFFDF6F9);
+
+  static const whiteCircle = Color(0x33FFFFFF);
+  static const shadow      = Color(0x0D000000);
+}
+
 class ChatbotScreen extends StatefulWidget {
   const ChatbotScreen({super.key});
 
@@ -15,7 +27,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   // Isi konten tiap menu
   final Map<String, String> _kontenMenu = {
     'Informasi Produk':
-        '🛍️ *Produk yang tersedia di HomeHobby:*\n\n'
+        'Produk - produk HomeHobby:\n\n'
         '• Stiker\n'
         '• Poster\n'
         '• Hand Banner\n'
@@ -24,7 +36,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         '• Standee\n\n'
         'Semua produk bisa dicustom sesuai desain kamu!',
     'Cara Pemesanan':
-        '📋 *Cara Pemesanan:*\n\n'
+        'Cara Pemesanan:\n\n'
         '1. Buka menu Katalog\n'
         '2. Pilih produk yang diinginkan\n'
         '3. Tentukan jumlah pesanan\n'
@@ -32,7 +44,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         '5. Tap tombol "Pesan Sekarang"\n'
         '6. Tunggu konfirmasi dari admin',
     'Cara Pembayaran':
-        '💳 *Cara Pembayaran:*\n\n'
+        'Cara Pembayaran:\n\n'
         '1. Setelah pesanan dikonfirmasi admin\n'
         '2. Transfer ke rekening berikut:\n'
         '   • BCA: 1234567890 a/n HomeHobby\n'
@@ -51,11 +63,12 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
   void _sapaPengguna() {
     Future.delayed(const Duration(milliseconds: 500), () {
+      if (!mounted) return;
       setState(() {
         _messages.add({
           'tipe': 'bot',
           'pesan':
-              'Halo! Selamat datang di HomeHobby 👋\n\nSilakan pilih informasi yang kamu butuhkan:',
+              'Halow! Welcome di HomeHobby 👋!!\n\nSilakan pilih informasi yang kamu butuhkan:',
         });
         _sudahSapa = true;
       });
@@ -63,17 +76,14 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   }
 
   Future<void> _pilihMenu(String menu) async {
-    // Tambah pesan user
     setState(() {
-      _messages.add({
-        'tipe': 'user',
-        'pesan': menu,
-      });
+      _messages.add({'tipe': 'user', 'pesan': menu});
     });
 
     // Kalau pilih Hubungi Admin → redirect WhatsApp
     if (menu == 'Hubungi Admin') {
       Future.delayed(const Duration(milliseconds: 600), () {
+        if (!mounted) return;
         setState(() {
           _messages.add({
             'tipe': 'bot',
@@ -82,14 +92,14 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         });
       });
 
-      // Buka WhatsApp setelah delay sebentar
       await Future.delayed(const Duration(milliseconds: 1200));
+      if (!mounted) return;
       _bukaWhatsApp();
       return;
     }
 
-    // Menu lain tetap seperti biasa
     Future.delayed(const Duration(milliseconds: 600), () {
+      if (!mounted) return;
       setState(() {
         _messages.add({
           'tipe': 'bot',
@@ -97,7 +107,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         });
         _messages.add({
           'tipe': 'bot',
-          'pesan': 'Ada yang ingin kamu tanyakan lagi?',
+          'pesan': 'Ada yang ingin ditanyakan lagi?',
           'showMenu': true,
         });
       });
@@ -105,20 +115,25 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   }
 
   Future<void> _bukaWhatsApp() async {
-    const noWhatsApp = '6282333963533';
-    const pesanAwal = 'Halo Admin HomeHobby, saya ingin bertanya tentang pesanan saya.';
+    const noWhatsApp = '6285336488329';
+    const pesanAwal =
+        'Halo Minchy, saya ingin bertanya tentang pesanan saya...';
 
     final Uri url = Uri.parse(
       'https://wa.me/$noWhatsApp?text=${Uri.encodeComponent(pesanAwal)}',
     );
 
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    } else {
+    try {
+      final berhasil = await launchUrl(url, mode: LaunchMode.externalApplication);
+      if (!berhasil) throw Exception('launchUrl returned false');
+    } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Tidak bisa membuka WhatsApp'),
-          backgroundColor: Colors.red,
+        SnackBar(
+          content: const Text('Tidak bisa membuka WhatsApp. Pastikan WhatsApp sudah terinstall.'),
+          backgroundColor: const Color(0xFFB71C1C),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
     }
@@ -127,17 +142,18 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: AppColors.bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF6C63FF),
+        backgroundColor: AppColors.deepRed,
+        elevation: 0,
         automaticallyImplyLeading: false,
         title: Row(
           children: [
             Container(
               width: 36,
               height: 36,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+              decoration: const BoxDecoration(
+                color: AppColors.whiteCircle,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -160,10 +176,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                 ),
                 Text(
                   'Online',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 11,
-                  ),
+                  style: TextStyle(color: Colors.white70, fontSize: 11),
                 ),
               ],
             ),
@@ -172,7 +185,6 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       ),
       body: Column(
         children: [
-          // Daftar Pesan
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
@@ -183,21 +195,26 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                 final showMenu = msg['showMenu'] == true;
 
                 return Column(
-                  crossAxisAlignment: isBot
-                      ? CrossAxisAlignment.start
-                      : CrossAxisAlignment.end,
+                  crossAxisAlignment:
+                      isBot ? CrossAxisAlignment.start : CrossAxisAlignment.end,
                   children: [
-                    // Bubble Chat
+                    //Bubble Chat
                     Row(
-                      mainAxisAlignment: isBot
-                          ? MainAxisAlignment.start
-                          : MainAxisAlignment.end,
+                      mainAxisAlignment:
+                          isBot ? MainAxisAlignment.start : MainAxisAlignment.end,
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         if (isBot) ...[
-                          CircleAvatar(
-                            radius: 16,
-                            backgroundColor: const Color(0xFF6C63FF),
+                          Container(
+                            width: 32, height: 32,
+                            decoration: const BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [AppColors.deepRed, AppColors.pink],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              shape: BoxShape.circle,
+                            ),
                             child: const Icon(
                               Icons.smart_toy_outlined,
                               color: Colors.white,
@@ -210,24 +227,23 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                           child: Container(
                             margin: const EdgeInsets.only(bottom: 4),
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 10,
-                            ),
+                                horizontal: 14, vertical: 10),
                             decoration: BoxDecoration(
-                              color: isBot
-                                  ? Colors.white
-                                  : const Color(0xFF6C63FF),
+                              color: isBot ? Colors.white : AppColors.deepRed,
                               borderRadius: BorderRadius.only(
                                 topLeft: const Radius.circular(16),
                                 topRight: const Radius.circular(16),
                                 bottomLeft: Radius.circular(isBot ? 0 : 16),
                                 bottomRight: Radius.circular(isBot ? 16 : 0),
                               ),
-                              boxShadow: [
+                              border: isBot
+                                  ? Border.all(color: AppColors.lightPink, width: 1)
+                                  : null,
+                              boxShadow: const [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
+                                  color: AppColors.shadow,
                                   blurRadius: 4,
-                                  offset: const Offset(0, 2),
+                                  offset: Offset(0, 2),
                                 ),
                               ],
                             ),
@@ -245,7 +261,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                       ],
                     ),
 
-                    // Tombol Menu
+                    //Tombol Menu
                     if (showMenu || (isBot && index == 0 && _sudahSapa)) ...[
                       const SizedBox(height: 12),
                       Wrap(
@@ -256,22 +272,18 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                             onTap: () => _pilihMenu(menu),
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 8,
-                              ),
+                                  horizontal: 14, vertical: 8),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: AppColors.lightPink,
                                 borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: const Color(0xFF6C63FF),
-                                ),
+                                border: Border.all(color: AppColors.deepRed, width: 1),
                               ),
                               child: Text(
                                 menu,
                                 style: const TextStyle(
-                                  color: Color(0xFF6C63FF),
+                                  color: AppColors.deepRed,
                                   fontSize: 12,
-                                  fontWeight: FontWeight.w500,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
